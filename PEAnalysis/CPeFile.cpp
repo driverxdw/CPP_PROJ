@@ -189,3 +189,64 @@ const  IMAGE_IMPORT_DESCRIPTOR* CPeFile::GetImportDescriptor(LPDWORD lpImportDes
 		*lpImportDescriptorNum = m_lpImportManager->m_dwImportDescriptorNum;
 	return m_lpImportManager->m_lpImportDescriptor;
 }
+
+const IMAGE_THUNK_DATA32* CPeFile::GetImportThunkData(DWORD iImport,LPDWORD lpCount) const
+{
+	assert(m_dwType == IMAGE_NT_SIGNATURE);
+	assert(m_lpImportManager&&iImport < m_lpImportManager->m_dwImportDescriptorNum);
+	if (lpCount)
+		*lpCount = m_lpImportManager->m_lpThunkDataCount[iImport];
+	return m_lpImportManager->m_lpThunkData[iImport];
+}
+
+const IMAGE_DATA_DIRECTORY* CPeFile::GetDataDirectory() const
+{
+	assert(m_dwType == IMAGE_NT_SIGNATURE);
+	if (m_b64Bit)
+	{
+		return ((IMAGE_NT_HEADERS64*)m_lpNtHeader)->OptionalHeader.DataDirectory;
+	}
+	return ((IMAGE_NT_HEADERS32*)m_lpNtHeader)->OptionalHeader.DataDirectory;
+}
+
+DWORD CPeFile::GetDataDirectoryEntryRva(DWORD dwIndex) const
+{
+	assert(m_dwType == IMAGE_NT_SIGNATURE);
+	return GetDataDirectory()[dwIndex].VirtualAddress;
+}
+
+BOOL CPeFile::ReadImport()
+{
+	assert(m_dwType == IMAGE_NT_SIGNATURE);
+	__try
+	{
+		if (ReadImportAux())
+		{
+			return TRUE;
+		}
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+		return -1;
+	}
+	return FALSE;
+}
+/*
+BOOL CPeFile::CPeImportManager::Initialize(IMAGE_IMPORT_DESCRIPTOR* lpImportStart,const CPeFile* lpPe)
+{
+	m_lpImportDescriptor = lpImportStart;
+	m_dwImportDescriptorNum = 0UL;
+	return TRUE;
+}
+*/
+
+BOOL CPeFile::ReadImportAux()
+{
+	DWORD dwImportRva = GetDataDirectoryEntryRva(IMAGE_DIRECTORY_ENTRY_IMPORT);
+	if (dwImportRva)
+	{
+		//m_lpImportManager = new CPeImportManager;
+		//m_lpImportManager->Initialize();
+	}
+	return TRUE;
+}
